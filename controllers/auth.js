@@ -4,6 +4,7 @@ import CustomError from '../errors/index.js';
 import createTokenUser from '../utils/createToken.js';
 import jwt from 'jsonwebtoken';
 
+// REGISTER USER #####################
 export const register = async (req, res) => {
   const { email, name, password } = req.body;
 
@@ -43,6 +44,7 @@ export const register = async (req, res) => {
   res.status(StatusCodes.CREATED).json({ user: tokenUser, accessToken });
 };
 
+// LOGIN USER ########################
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -85,6 +87,7 @@ export const login = async (req, res) => {
   res.status(StatusCodes.OK).json({ user: tokenUser, accessToken });
 };
 
+// REFRESH TOKEN #####################
 export const refresh = async (req, res) => {
   const cookies = req.cookies;
   // console.log({ cookies: req.cookies });
@@ -115,6 +118,7 @@ export const refresh = async (req, res) => {
   }
 };
 
+// LOGOUT ############################
 export const logout = (req, res) => {
   const cookies = req.cookies;
   if (!cookies['ishop-refresh-token'])

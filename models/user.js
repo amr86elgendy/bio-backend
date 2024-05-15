@@ -5,6 +5,12 @@ import bcrypt from 'bcryptjs';
 const { model, Schema } = mongoose;
 const { isEmail } = pkg;
 
+const AddressSchema = new Schema({
+  city: String,
+  street: String,
+  state: String,
+});
+
 const userSchema = new Schema(
   {
     name: {
@@ -30,9 +36,7 @@ const userSchema = new Schema(
       enum: ['admin', 'user'],
       default: 'user',
     },
-    address: {
-      type: String,
-    },
+    addresses: [AddressSchema],
   },
   {
     methods: {
@@ -41,8 +45,14 @@ const userSchema = new Schema(
       },
     },
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
+
+userSchema.virtual('ordersCount').get(async function () {
+  return await this.model('Order').countDocuments({ user: this._id });
+});
 
 // Fire a function before doc saved to db
 userSchema.pre('save', async function () {

@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const { model, Schema } = mongoose;
 
 const subCategorySchema = new Schema({
-  name: {
+  user: {
     type: String,
     required: [true, 'Please provide sub-category name'],
   },

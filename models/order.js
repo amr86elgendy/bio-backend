@@ -4,23 +4,25 @@ const { model, Schema } = mongoose;
 const { ObjectId } = Schema.Types;
 
 const SingleOrderItemSchema = new Schema({
-  name: { type: String, required: true },
-  image: { type: String, required: true },
-  price: { type: Number, required: true },
-  amount: { type: Number, required: true },
   product: {
     type: ObjectId,
     ref: 'Product',
     required: true,
   },
+  amount: { type: Number, default: 0 },
+  price: { type: Number, required: true },
+  name: { type: String, required: true },
+  image: { type: String, required: true },
 });
 
 const orderSchema = new Schema(
   {
-    tax: {
-      type: Number,
+    user: {
+      type: ObjectId,
+      ref: 'User',
       required: true,
     },
+    orderItems: [SingleOrderItemSchema],
     shippingFee: {
       type: Number,
       required: true,
@@ -33,20 +35,28 @@ const orderSchema = new Schema(
       type: Number,
       required: true,
     },
-    orderItems: [SingleOrderItemSchema],
     status: {
       type: String,
-      enum: ['pending', 'failed', 'paid', 'delivered', 'canceled'],
+      enum: ['pending', 'failed', 'paid', 'shipped', 'delivered', 'canceled'],
       default: 'pending',
     },
-    user: {
-      type: ObjectId,
-      ref: 'User',
-      required: true,
+    shippingAddress: {
+      street: {
+        type: String,
+        required: true,
+      },
+      city: {
+        type: String,
+        required: true,
+      },
+      state: {
+        type: String,
+        required: true,
+      },
     },
     clientSecret: {
       type: String,
-      required: true,
+      // required: true,
     },
     paymentIntentId: {
       type: String,

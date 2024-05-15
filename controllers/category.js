@@ -14,7 +14,20 @@ export const createCategory = async (req, res) => {
 // ################# Get All Category #################
 export const getCategories = async (req, res) => {
   const categories = await Category.find({});
-  res.status(StatusCodes.CREATED).json(categories);
+  res.status(StatusCodes.OK).json(categories);
+};
+
+// ################ Get Category ##################
+export const getSingleCategory = async (req, res) => {
+  const { id: categoryId } = req.params;
+
+  const category = await Category.findOne({ _id: categoryId }); // virtuals
+
+  if (!category) {
+    throw new CustomError.NotFoundError(`No category with id : ${categoryId}`);
+  }
+
+  res.status(StatusCodes.OK).json({ category });
 };
 
 // ################# Update Category #################

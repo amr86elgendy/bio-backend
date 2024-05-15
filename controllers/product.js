@@ -1,22 +1,21 @@
-import path from "path";
-import fs from "fs";
-import cloudinary from "cloudinary";
-import { StatusCodes } from "http-status-codes";
-import slugify from "slugify";
+import path from 'path';
+import fs from 'fs';
+import cloudinary from 'cloudinary';
+import { StatusCodes } from 'http-status-codes';
+import slugify from 'slugify';
 
-import Product from "../models/product.js";
-import CustomError from "../errors/index.js";
+import Product from '../models/product.js';
+import CustomError from '../errors/index.js';
 
 export const createProduct = async (req, res) => {
   // req.body.user = req.user._id;
-  req.body.slug = slugify(req.body.name);
+  req.body.slug = slugify(req.body.name, { lower: true });
 
   const product = await Product.create(req.body);
   res.status(StatusCodes.CREATED).json({ product });
 };
 
 // ######################################################
-
 export const getAllProducts = async (req, res) => {
   let {
     name,
@@ -33,7 +32,7 @@ export const getAllProducts = async (req, res) => {
   let queryObject = { ...req.query };
   // Name
   if (queryObject.name) {
-    queryObject.name = { $regex: name, $options: "i" };
+    queryObject.name = { $regex: name, $options: 'i' };
   }
   // Average Rating
   if (queryObject.averageRating) {
@@ -62,14 +61,13 @@ export const getAllProducts = async (req, res) => {
     .skip(skip)
     .limit(limit)
     .populate({
-      path: "category",
-      select: "name slug",
+      path: 'category',
+      select: 'name slug',
       options: { _recursed: true },
     });
   const productsCount = await Product.countDocuments(queryObject);
   const lastPage = Math.ceil(productsCount / limit);
   res.status(StatusCodes.OK).json({
-    pageCount: products.length,
     totalCount: productsCount,
     currentPage: Number(page),
     lastPage,
@@ -84,12 +82,12 @@ export const getSingleProduct = async (req, res) => {
 
   const product = await Product.findOne({ _id: productId }).populate([
     {
-      path: "reviews",
-      populate: { path: "user", select: "name" },
+      path: 'reviews',
+      populate: { path: 'user', select: 'name' },
     },
     {
-      path: "category",
-      select: "name",
+      path: 'category',
+      select: 'name',
       options: { _recursed: true },
     },
   ]); // virtuals
@@ -118,7 +116,11 @@ export const updateProduct = async (req, res) => {
   if (!product) {
     throw new CustomError.NotFoundError(`No product with id : ${productId}`);
   }
-  
+
+  if (req.body.category) {
+    await Product.countByCategory();
+  }
+
   res.status(StatusCodes.OK).json({ product });
 };
 
@@ -127,37 +129,41 @@ export const updateProduct = async (req, res) => {
 export const deleteProduct = async (req, res) => {
   const { id: productId } = req.params;
 
-  const product = await Product.findOneAndDelete({ _id: productId });
+  const product = await Product.findOne({ _id: productId });
 
   if (!product) {
     throw new CustomError.NotFoundError(`No product with id : ${productId}`);
   }
-  res.status(StatusCodes.OK).json({ msg: "Success! Product removed." });
+
+  await product.deleteOne();
+  // await Product.countByCategory();
+
+  res.status(StatusCodes.OK).json({ msg: 'Success! Product removed.' });
 };
 
 // ######################################################
 
 export const uploadImageLocal = async (req, res) => {
   if (!req.files) {
-    throw new CustomError.BadRequestError("No File Uploaded");
+    throw new CustomError.BadRequestError('No File Uploaded');
   }
   const productImage = req.files.image;
 
-  if (!productImage.mimetype.startsWith("image")) {
-    throw new CustomError.BadRequestError("Please Upload Image");
+  if (!productImage.mimetype.startsWith('image')) {
+    throw new CustomError.BadRequestError('Please Upload Image');
   }
 
   const maxSize = 1024 * 1024;
 
   if (productImage.size > maxSize) {
     throw new CustomError.BadRequestError(
-      "Please upload image smaller than 1MB"
+      'Please upload image smaller than 1MB'
     );
   }
-  const dirname = path.resolve(path.dirname(""));
+  const dirname = path.resolve(path.dirname(''));
   const imagePath = path.join(
     dirname,
-    "./public/uploads/" + `${productImage.name}`
+    './public/uploads/' + `${productImage.name}`
   );
 
   await productImage.mv(imagePath);
@@ -170,7 +176,7 @@ export const uploadImage = async (req, res) => {
   // console.log(req.files);
   const result = await cloudinary.v2.uploader.upload(
     req.files.image.tempFilePath,
-    { use_filename: true, folder: "elgendy-ecommerce" },
+    { use_filename: true, folder: 'elgendy-ecommerce' },
     (a, p) => {
       // console.log({ a, p });
     }

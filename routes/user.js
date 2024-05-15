@@ -6,6 +6,7 @@ import {
   authorizePermissions,
 } from '../middlewares/full-auth.js';
 import {
+  addAddress,
   getAllUsers,
   getSingleUser,
   showCurrentUser,
@@ -19,6 +20,8 @@ router
 
 router.route('/getMe').get(authenticateUser, showCurrentUser);
 router.route('/updateUserPassword').patch(authenticateUser, updateUserPassword);
+
+router.route('/address').post(authenticateUser, addAddress);
 
 router
   .route('/:id')

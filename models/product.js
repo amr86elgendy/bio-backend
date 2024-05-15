@@ -87,67 +87,48 @@ const productSchema = new Schema(
   },
   {
     timestamps: true,
-    // toJSON: { virtuals: true },
+    toJSON: { virtuals: true },
     toObject: { virtuals: true },
     statics: {
-      countByCategory: async function (categoryIds) {
-        // console.log({ categoryIds });
-        categoryIds.forEach(async (categoryId) => {
-          const result = await this.aggregate([
-            { $match: { category: categoryId } },
-            {
-              $group: {
-                _id: null,
-                count: { $sum: 1 },
-              },
+      countByCategory: async function () {
+        const result = await this.aggregate([
+          { $unwind: '$category' },
+          {
+            $group: {
+              _id: '$category',
+              count: { $sum: 1 },
             },
-          ]);
-          // console.log('result', result);
-          try {
-            const category = await this.model('Category').findById(categoryId);
-            category.productsCount = result[0]?.count ?? 0;
+          },
+        ]);
+        // console.log('result', result);
+        try {
+          result.forEach(async (cat) => {
+            const category = await this.model('Category').findById(cat._id);
+            category.productsCount = cat?.count ?? 0;
             await category.save();
-          } catch (error) {
-            console.log(error);
-          }
-        });
-      },
-      countBySubCategory: async function (subCategoryId) {
-        const result = await this.aggregate([
-          { $match: { subCategory: subCategoryId } },
-          {
-            $group: {
-              _id: null,
-              count: { $sum: 1 },
-            },
-          },
-        ]);
-        try {
-          const sub = await this.model('SubCategory').findById(subCategoryId);
-          sub.productsCount = result[0]?.count ?? 0;
-          await sub.save();
+          });
         } catch (error) {
           console.log(error);
         }
       },
-      countByBrand: async function (brandId) {
-        const result = await this.aggregate([
-          { $match: { brand: brandId } },
-          {
-            $group: {
-              _id: null,
-              count: { $sum: 1 },
-            },
-          },
-        ]);
-        try {
-          const brand = await this.model('Brand').findById(brandId);
-          brand.productsCount = result[0]?.count ?? 0;
-          await brand.save();
-        } catch (error) {
-          console.log(error);
-        }
-      },
+      // countBySubCategory: async function (subCategoryId) {
+      //   const result = await this.aggregate([
+      //     { $match: { subCategory: subCategoryId } },
+      //     {
+      //       $group: {
+      //         _id: null,
+      //         count: { $sum: 1 },
+      //       },
+      //     },
+      //   ]);
+      //   try {
+      //     const sub = await this.model('SubCategory').findById(subCategoryId);
+      //     sub.productsCount = result[0]?.count ?? 0;
+      //     await sub.save();
+      //   } catch (error) {
+      //     console.log(error);
+      //   }
+      // },
     },
   }
 );
@@ -161,14 +142,10 @@ productSchema.virtual('reviews', {
 });
 
 productSchema.post('save', async function () {
-  await this.constructor.countByCategory(this.category);
-  await this.constructor.countBySubCategory(this.subCategory);
+  await this.constructor.countByCategory();
 });
-
-productSchema.pre('findOneAndDelete', { document: true }, async function () {
-  console.log({ thfdfdfd: this.category });
-  await this.constructor.countByCategory(this.category);
-  // await this.constructor.countBySubCategory(this.subCategory);
+productSchema.post('deleteOne', async function () {
+  await productSchema.countByCategory()
 });
 
 productSchema.pre('remove', async function () {

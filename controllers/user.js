@@ -14,7 +14,6 @@ export const getAllUsers = async (req, res) => {
 };
 
 // ####################################################
-
 export const getSingleUser = async (req, res) => {
   const user = await User.findOne({ _id: req.params.id }).select('-password');
   if (!user) {
@@ -24,19 +23,33 @@ export const getSingleUser = async (req, res) => {
   res.status(StatusCodes.OK).json({ user });
 };
 
-// ####################################################
+// ADD ADDRESS  #######################################
+export const addAddress = async (req, res) => {
+  const { city, state, street, userId } = req.body;
+  
+  const resourceId = userId ?? req.user._id;
+  
+  chechPermissions(req.user, resourceId);
 
+  await User.findOneAndUpdate(
+    { _id: resourceId },
+    { $push: { addresses: { city, state, street } } },
+    { runValidators: true }
+  );
+  res.status(StatusCodes.OK).json({ msg: 'Address added successfully' });
+};
+
+// GET ME ####################################################
 export const showCurrentUser = async (req, res) => {
   res.status(StatusCodes.OK).json({ user: req.user });
 };
 
 // ####################################################
-
 export const updateUser = async (req, res) => {
   const { id } = req.params;
   const { email, name } = req.body;
 
-  chechPermissions(req.user, id)
+  chechPermissions(req.user, id);
 
   await User.findOneAndUpdate(
     { _id: id },
