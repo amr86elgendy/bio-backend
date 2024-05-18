@@ -60,6 +60,6 @@ export const deleteCategory = async (req, res) => {
     throw new CustomError.NotFoundError(`No category with id : ${categoryId}`);
   }
 
-  await category.remove();
-  res.status(StatusCodes.OK).json({ msg: "Success! Product removed." });
+  await category.deleteOne();
+  res.status(StatusCodes.OK).json({ msg: "Success! Category removed." });
 };

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { countOrdersByUser } from '../middlewares/aggregations.js';
 
 const { model, Schema } = mongoose;
 const { ObjectId } = Schema.Types;
@@ -62,8 +63,14 @@ const orderSchema = new Schema(
       type: String,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-const Order = model('Order', orderSchema)
+orderSchema.post('save', async function () {
+  await countOrdersByUser(this.user);
+});
+
+const Order = model('Order', orderSchema);
 export default Order;

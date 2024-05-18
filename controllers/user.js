@@ -1,19 +1,16 @@
-import User from '../models/user.js';
 import { StatusCodes } from 'http-status-codes';
+import User from '../models/user.js';
 import CustomError from '../errors/index.js';
-import {
-  createTokenUser,
-  attachCookiesToResponse,
-  checkPermissions,
-} from '../utils/index.js';
+import { checkPermissions } from '../utils/index.js';
 import chechPermissions from '../utils/checkPermissions.js';
 
 export const getAllUsers = async (req, res) => {
-  const users = await User.find({ role: 'user' }).select('-password');
+  const users = await User.find({ role: 'user' }).select('-password').exec();
+
   res.status(StatusCodes.OK).json({ users });
 };
 
-// ####################################################
+// GET SINGLE USER ####################################
 export const getSingleUser = async (req, res) => {
   const user = await User.findOne({ _id: req.params.id }).select('-password');
   if (!user) {
@@ -26,9 +23,9 @@ export const getSingleUser = async (req, res) => {
 // ADD ADDRESS  #######################################
 export const addAddress = async (req, res) => {
   const { city, state, street, userId } = req.body;
-  
+
   const resourceId = userId ?? req.user._id;
-  
+
   chechPermissions(req.user, resourceId);
 
   await User.findOneAndUpdate(
@@ -39,12 +36,12 @@ export const addAddress = async (req, res) => {
   res.status(StatusCodes.OK).json({ msg: 'Address added successfully' });
 };
 
-// GET ME ####################################################
+// GET ME #############################################
 export const showCurrentUser = async (req, res) => {
   res.status(StatusCodes.OK).json({ user: req.user });
 };
 
-// ####################################################
+// UPDATE USER ########################################
 export const updateUser = async (req, res) => {
   const { id } = req.params;
   const { email, name } = req.body;
@@ -59,7 +56,20 @@ export const updateUser = async (req, res) => {
   res.status(StatusCodes.OK).json({ msg: 'User updated successfully' });
 };
 
-// ####################################################
+// BLOCK USER #########################################
+export const blockUser = async (req, res) => {
+  const { id, blocked } = req.body;
+
+  await User.findOneAndUpdate(
+    { _id: id },
+    { blocked },
+    { runValidators: true }
+  );
+
+  res.status(StatusCodes.OK).json({ msg: 'User updated successfully' });
+};
+
+// UPDATE USER PASSWORD ###############################
 
 export const updateUserPassword = async (req, res) => {
   const { oldPassword, newPassword } = req.body;

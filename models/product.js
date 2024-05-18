@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { countProductsByCategory } from '../middlewares/aggregations.js';
 
 const { model, Schema } = mongoose;
 const { ObjectId } = Schema.Types;
@@ -90,27 +91,27 @@ const productSchema = new Schema(
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
     statics: {
-      countByCategory: async function () {
-        const result = await this.aggregate([
-          { $unwind: '$category' },
-          {
-            $group: {
-              _id: '$category',
-              count: { $sum: 1 },
-            },
-          },
-        ]);
-        // console.log('result', result);
-        try {
-          result.forEach(async (cat) => {
-            const category = await this.model('Category').findById(cat._id);
-            category.productsCount = cat?.count ?? 0;
-            await category.save();
-          });
-        } catch (error) {
-          console.log(error);
-        }
-      },
+      // countByCategory: async function () {
+      //   const result = await this.aggregate([
+      //     { $unwind: '$category' },
+      //     {
+      //       $group: {
+      //         _id: '$category',
+      //         count: { $sum: 1 },
+      //       },
+      //     },
+      //   ]);
+      //   // console.log('result', result);
+      //   try {
+      //     result.forEach(async (cat) => {
+      //       const category = await this.model('Category').findById(cat._id);
+      //       category.productsCount = cat?.count ?? 0;
+      //       await category.save();
+      //     });
+      //   } catch (error) {
+      //     console.log(error);
+      //   }
+      // },
       // countBySubCategory: async function (subCategoryId) {
       //   const result = await this.aggregate([
       //     { $match: { subCategory: subCategoryId } },
@@ -141,12 +142,12 @@ productSchema.virtual('reviews', {
   justOne: false,
 });
 
-productSchema.post('save', async function () {
-  await this.constructor.countByCategory();
-});
-productSchema.post('deleteOne', async function () {
-  await productSchema.countByCategory()
-});
+productSchema.post(
+  ['save', 'deleteOne', 'findOneAndUpdate'],
+  async function () {
+    await countProductsByCategory();
+  }
+);
 
 productSchema.pre('remove', async function () {
   // delete all reviews related to this product

@@ -117,10 +117,6 @@ export const updateProduct = async (req, res) => {
     throw new CustomError.NotFoundError(`No product with id : ${productId}`);
   }
 
-  if (req.body.category) {
-    await Product.countByCategory();
-  }
-
   res.status(StatusCodes.OK).json({ product });
 };
 
@@ -136,7 +132,6 @@ export const deleteProduct = async (req, res) => {
   }
 
   await product.deleteOne();
-  // await Product.countByCategory();
 
   res.status(StatusCodes.OK).json({ msg: 'Success! Product removed.' });
 };

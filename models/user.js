@@ -36,7 +36,12 @@ const userSchema = new Schema(
       enum: ['admin', 'user'],
       default: 'user',
     },
+    blocked: {
+      type: Boolean,
+      default: false,
+    },
     addresses: [AddressSchema],
+    ordersCount: { type: Number, default: 0 },
   },
   {
     methods: {
@@ -49,10 +54,6 @@ const userSchema = new Schema(
     toObject: { virtuals: true },
   }
 );
-
-userSchema.virtual('ordersCount').get(async function () {
-  return await this.model('Order').countDocuments({ user: this._id });
-});
 
 // Fire a function before doc saved to db
 userSchema.pre('save', async function () {
