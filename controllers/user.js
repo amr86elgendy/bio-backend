@@ -5,9 +5,47 @@ import { checkPermissions } from '../utils/index.js';
 import chechPermissions from '../utils/checkPermissions.js';
 
 export const getAllUsers = async (req, res) => {
-  const users = await User.find({ role: 'user' }).select('-password').exec();
+  let { name, blocked, page = 1, limit = 10 } = req.query;
 
-  res.status(StatusCodes.OK).json({ users });
+  let skip = (Number(page) - 1) * Number(limit);
+  let queryObject = { role: 'user', ...req.query };
+
+  // Name
+  if (queryObject.name) {
+    queryObject.name = { $regex: name, $options: 'i' };
+  }
+  // Blocked
+  if (queryObject.blocked) {
+    console.log(blocked);
+    const arrOfBoolean = Array.isArray(blocked)
+      ? blocked.map((b) => (b === 'blocked' ? true : false))
+      : blocked === 'blocked'
+      ? true
+      : false;
+
+      console.log(arrOfBoolean);
+    queryObject.blocked = { $in: arrOfBoolean };
+  }
+
+  // Pagination
+  delete queryObject.page;
+  delete queryObject.limit;
+
+  const users = await User.find(queryObject)
+    .skip(skip)
+    .limit(limit)
+    .select('-password')
+    .exec();
+
+  const usersCount = await User.countDocuments(queryObject);
+  const lastPage = Math.ceil(usersCount / limit);
+
+  res.status(StatusCodes.OK).json({
+    totalCount: usersCount,
+    currentPage: Number(page),
+    lastPage,
+    users,
+  });
 };
 
 // GET SINGLE USER ####################################

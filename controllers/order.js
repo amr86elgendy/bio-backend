@@ -77,20 +77,16 @@ export const createOrder = async (req, res) => {
 
 // GET ALL ORDERS ##############
 export const getAllOrders = async (req, res) => {
-  let {
-    name,
-    sort,
-    page = 1,
-    limit = 10,
-    averageRating,
-    price,
-    colors,
-    sizes,
-  } = req.query;
+  let { name, status, sort, page = 1, limit = 10 } = req.query;
 
   let skip = (Number(page) - 1) * Number(limit);
-
+console.log(req.query);
   let queryObject = { ...req.query };
+
+  // Company
+  if (queryObject.status) {
+    queryObject.status = { $in: status };
+  }
 
   // Pagination & Sort
   delete queryObject.page;
@@ -106,16 +102,14 @@ export const getAllOrders = async (req, res) => {
       select: 'name email',
       options: { _recursed: true },
     });
-    const ordersCount = await Order.countDocuments(queryObject);
-    const lastPage = Math.ceil(ordersCount / limit);
-  res
-    .status(StatusCodes.OK)
-    .json({
-      totalCount: ordersCount,
-      currentPage: Number(page),
-      lastPage,
-      orders,
-    });
+  const ordersCount = await Order.countDocuments(queryObject);
+  const lastPage = Math.ceil(ordersCount / limit);
+  res.status(StatusCodes.OK).json({
+    totalCount: ordersCount,
+    currentPage: Number(page),
+    lastPage,
+    orders,
+  });
 };
 
 // GET SINGLE ORDER ############

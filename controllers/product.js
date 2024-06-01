@@ -10,7 +10,7 @@ import CustomError from '../errors/index.js';
 export const createProduct = async (req, res) => {
   // req.body.user = req.user._id;
   req.body.slug = slugify(req.body.name, { lower: true });
-
+  console.log(req.body);
   const product = await Product.create(req.body);
   res.status(StatusCodes.CREATED).json({ product });
 };
@@ -24,8 +24,9 @@ export const getAllProducts = async (req, res) => {
     limit = 10,
     averageRating,
     price,
-    colors,
-    sizes,
+    company,
+    category,
+    itemForm,
   } = req.query;
 
   let skip = (Number(page) - 1) * Number(limit);
@@ -42,14 +43,22 @@ export const getAllProducts = async (req, res) => {
   if (queryObject.price) {
     queryObject.price = { $gte: price[0], $lte: price[1] };
   }
-  // Colors
-  if (queryObject.colors) {
-    queryObject.colors = { $elemMatch: { $in: colors } };
+  // Company
+  if (queryObject.company) {
+    queryObject.company = { $in: company };
   }
-  // Sizes
-  if (queryObject.sizes) {
-    queryObject.sizes = { $elemMatch: { $in: sizes } };
+  // Item Form
+  if (queryObject.itemForm) {
+    queryObject.itemForm =  { $in: itemForm };
   }
+  // Category
+  if (queryObject.category) {
+    queryObject.category = { $elemMatch: { $in: category } };
+  }
+  // // Sizes
+  // if (queryObject.sizes) {
+  //   queryObject.sizes = { $elemMatch: { $in: sizes } };
+  // }
 
   // Pagination & Sort
   delete queryObject.page;
@@ -65,6 +74,7 @@ export const getAllProducts = async (req, res) => {
       select: 'name slug',
       options: { _recursed: true },
     });
+  
   const productsCount = await Product.countDocuments(queryObject);
   const lastPage = Math.ceil(productsCount / limit);
   res.status(StatusCodes.OK).json({

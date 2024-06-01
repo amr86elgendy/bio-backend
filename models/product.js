@@ -61,7 +61,7 @@ const productSchema = new Schema(
       type: Number,
       required: [true, 'Please provide product price'],
     },
-    itemUnits: Schema.Types.Mixed,
+    // itemUnits: Schema.Types.Mixed,
     freeShipping: {
       type: Boolean,
       default: false,
