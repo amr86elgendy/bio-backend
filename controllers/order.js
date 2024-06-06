@@ -80,11 +80,11 @@ export const getAllOrders = async (req, res) => {
   let { name, status, sort, page = 1, limit = 10 } = req.query;
 
   let skip = (Number(page) - 1) * Number(limit);
-console.log(req.query);
-  let queryObject = { ...req.query };
 
-  // Company
-  if (queryObject.status) {
+  let queryObject = {};
+
+  // Status
+  if (status) {
     queryObject.status = { $in: status };
   }
 
@@ -94,28 +94,35 @@ console.log(req.query);
   delete queryObject.sort;
 
   const orders = await Order.find(queryObject)
-    .sort(sort)
-    .skip(skip)
-    .limit(limit)
     .populate({
       path: 'user',
+      match: { name: new RegExp(name, 'i') },
       select: 'name email',
       options: { _recursed: true },
-    });
+    })
+    .sort(sort)
+    .skip(skip)
+    .limit(limit);
+
+  // Filter out orders with no matched user
+  const filteredOrders = orders.filter((order) => order.user);
   const ordersCount = await Order.countDocuments(queryObject);
   const lastPage = Math.ceil(ordersCount / limit);
   res.status(StatusCodes.OK).json({
     totalCount: ordersCount,
     currentPage: Number(page),
     lastPage,
-    orders,
+    orders: filteredOrders,
   });
 };
 
 // GET SINGLE ORDER ############
 export const getSingleOrder = async (req, res) => {
   const { id: orderId } = req.params;
-  const order = await Order.findOne({ _id: orderId });
+  const order = await Order.findOne({ _id: orderId }).populate({
+    path: 'orderItems.product',
+    select: 'description images',
+  });
   if (!order) {
     throw new CustomError.NotFoundError(`No order with id : ${orderId}`);
   }
@@ -141,8 +148,9 @@ export const updateOrder = async (req, res) => {
   checkPermissions(req.user, order.user);
 
   order.paymentIntentId = paymentIntentId;
-  order.status = 'paid';
+  order.status = 'processing';
   await order.save();
 
   res.status(StatusCodes.OK).json({ order });
 };
+
